@@ -1,3 +1,5 @@
 # Toolchain
 
-TODO: かく
+```
+pip install . --upgrade
+```
