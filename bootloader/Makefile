@@ -29,7 +29,7 @@ $(BUILD_DIR)/stager.o: stager.S $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c stager.S -o $(BUILD_DIR)/stager.o
 
 $(TARGET): $(OBJS) $(BUILD_DIR)
-	$(LD) $(LDFLAGS) -T bootloader.ld -o bootloader $(OBJS)
+	$(LD) $(LDFLAGS) -T bootloader.ld -o $(TARGET) $(OBJS)
 
 clean:
 	rm -rf $(OBJS) $(TARGET) $(BUILD_DIR)
