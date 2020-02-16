@@ -10,7 +10,7 @@ radix=16;'''
 def bin2coe(fname):
    with open(fname, 'rb') as f:
       content = f.read()
-   unpacked_content = ["{:08x}".format(struct.unpack("<I", content[i:i+4])[0]) for i in range(0,len(content),4)]
+   unpacked_content = ["{:02x}".format(ord(content[i])) for i in range(0,len(content))]
    print(template.format(','.join(unpacked_content)))
 
 def main():
