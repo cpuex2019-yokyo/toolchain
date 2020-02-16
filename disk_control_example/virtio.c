@@ -4,27 +4,22 @@
 #include "uart.h"
 #include "printf.h"
 #include "riscv.h"
+#include "virtio.h"
 
 #define R(r) ((volatile uint32 *)(VIRTIO0 + (r)))
 
 __attribute__ ((aligned (16))) char stack0[4096];
+static disk_t disk;
 
-static struct disk {
-  char pages[2*PGSIZE];
-  struct VRingDesc *desc;
-  uint16 *avail;
-  struct UsedArea *used;
-
-  char free[NUM];
-  uint16 used_idx;
-
-  struct {
-    struct buf *b;
-    char status;
-  } info[NUM];
-    
-} __attribute__ ((aligned (PGSIZE))) disk;
-
+int
+virtio_used_updated(void){
+  if ((disk.used_idx % NUM) != (disk.used->id % NUM)){
+    disk.used_idx++;
+    return 1;
+  } else {
+    return 0;
+  }
+}
 
 void
 virtio_disk_init(void)
@@ -95,7 +90,7 @@ virtio_disk_rw(int blockno, int write, char* buffer)
   int idx[3];
   for(int i = 0; i < 3; i++){
     disk.free[i] = 0;
-    idx[i] = i;
+    idx[i] = i+1;
   }
 
   struct virtio_blk_outhdr {

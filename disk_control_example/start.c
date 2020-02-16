@@ -46,12 +46,12 @@ void init_buffer(){
 
 void write_test(){
   // write to sector 1 from buffer
-  virtio_disk_rw(0, WRITE, buffer);  
+  virtio_disk_rw(1, WRITE, buffer);  
 }
 
 void read_test(){
   // read from sector 0 to buffer2
-  virtio_disk_rw(0, READ, buffer2);
+  virtio_disk_rw(1, READ, buffer2);
 }
 
 int verify_result(){
@@ -67,17 +67,18 @@ void interrupt(){
   if((scause & 0x80000000)
      && (scause & 0xff) == 9
      && irq == VIRTIO0_IRQ){
-    // it's a sign that write_test finishes!
-    if (phase == 0){
-      read_test();
-      printf("5\n");
-      phase++;
-    } else {
-      printf("7\n");
-      if(verify_result())
-        pass();
-      else
-        fail();
+    while(virtio_used_updated()){
+      if (phase == 0){
+        read_test();
+        printf("5\n");
+        phase++;
+      } else {
+        printf("7\n");
+        if(verify_result())
+          pass();
+        else
+          fail();
+      }
     }
     *(uint32*)PLIC_SCLAIM(0) = irq;
   }

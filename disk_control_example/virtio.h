@@ -1,3 +1,4 @@
+#pragma once
 #include "types.h"
 
 #define VIRTIO_MMIO_MAGIC_VALUE		0x000
@@ -73,3 +74,21 @@ struct buf {
   struct buf *qnext;
   uchar data[1024];
 };
+
+typedef struct _disk_t {
+  char pages[2*PGSIZE];
+  struct VRingDesc *desc;
+  uint16 *avail;
+  struct UsedArea *used;
+
+  char free[NUM];
+  uint16 used_idx;
+
+  struct {
+    struct buf *b;
+    char status;
+  } info[NUM];
+    
+} __attribute__ ((aligned (PGSIZE))) disk_t;
+
+int virtio_used_updated(void);
