@@ -109,7 +109,6 @@ void smain(){
   write_test();
   
   printf("4\n");
-  
   jump_to_user((uint32) wait_for_interrupt);
 }
 
