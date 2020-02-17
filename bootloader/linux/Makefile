@@ -29,7 +29,7 @@ $(BUILD_DIR)/entry.o: entry.S $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c entry.S -o $(BUILD_DIR)/entry.o
 
 $(BUILD_DIR)/start.o: start.c $(BUILD_DIR)
-4	$(CC) $(CFLAGS) -c start.c -o $(BUILD_DIR)/start.o
+	$(CC) $(CFLAGS) -c start.c -o $(BUILD_DIR)/start.o
 
 $(BUILD_DIR)/virtio.o: virtio.c $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c virtio.c -o $(BUILD_DIR)/virtio.o
@@ -41,7 +41,7 @@ $(BUILD_DIR)/uart.o: uart.c $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c uart.c -o $(BUILD_DIR)/uart.o
 
 $(BUILD_DIR)/bootloader.elf: $(OBJS) $(BUILD_DIR)
-	$(LD) $(LDFLAGS) -T bootloaderontrol.ld -o $(BUILD_DIR)/bootloader.elf $(OBJS)
+	$(LD) $(LDFLAGS) -T bootloader.ld -o $(BUILD_DIR)/bootloader.elf $(OBJS)
 
 $(BUILD_DIR)/bootloader.bin: $(OBJS) $(BUILD_DIR)
 	yokyo_elf2bin $(BUILD_DIR)/bootloader.elf $(BUILD_DIR)/bootloader.bin 
@@ -49,20 +49,5 @@ $(BUILD_DIR)/bootloader.bin: $(OBJS) $(BUILD_DIR)
 $(BUILD_DIR)/bootloader.coe: $(OBJS) $(BUILD_DIR)
 	yokyo_bin2coe $(BUILD_DIR)/bootloader.bin > $(BUILD_DIR)/bootloader.coe
 
-$(BUILD_DIR)/rawdisk: $(BUILD_DIR)
-	echo TODO
-	python -c "for i in range(0, 0xFF+1): print(chr(i) * 1024)" > $(BUILD_DIR)/rawdisk
-
 clean:
 	rm -rf $(OBJS) $(TARGET) $(BUILD_DIR)
-
-run: $(BUILD_DIR)/bootloader.elf $(BUILD_DIR)/rawdisk
-	 qemu-system-riscv32 -machine virt \
-		-bios none \
-		-kernel $(BUILD_DIR)/bootloader.elf \
-		-nographic -drive file=$(BUILD_DIR)/rawdisk,if=none,format=raw,id=x0\
-		-device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0\
-		-trace events=trace-events,file=trace.log
-
-run-gdb: $(BUILD_DIR)/bootloader.elf $(BUILD_DIR)/rawdisk
-	 qemu-system-riscv32 -machine virt -bios none -kernel $(BUILD_DIR)/bootloader.elf -nographic -drive file=$(BUILD_DIR)/rawdisk,if=none,format=raw,id=x0 -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0 -S -gdb tcp::9999
