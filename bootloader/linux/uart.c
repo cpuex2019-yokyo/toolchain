@@ -47,13 +47,6 @@ uartgetc(void)
 void
 consputc(int c)
 {
-  extern volatile int panicked; // from printf.c
-
-  if(panicked){
-    for(;;)
-      ;
-  }
-
   if(c == BACKSPACE){
     // if the user typed backspace, overwrite with a space.
     uartputc('\b'); uartputc(' '); uartputc('\b');

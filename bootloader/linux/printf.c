@@ -3,7 +3,6 @@
 #include "uart.h"
 #include "printf.h"
 
-volatile int panicked = 0;
 static char digits[] = "0123456789abcdef";
 
 
@@ -93,7 +92,6 @@ panic(char *s)
   printf("panic: ");
   printf(s);
   printf("\n");
-  panicked = 1;
   for(;;)
     ;
 }

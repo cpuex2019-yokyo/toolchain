@@ -10,7 +10,8 @@ setup(
     entry_points={
         "console_scripts": [
             "yokyo_elf2bin=yokyo_toolchain.elf2bin:main",
-            "yokyo_bin2coe=yokyo_toolchain.bin2coe:main"
+            "yokyo_bin2coe=yokyo_toolchain.bin2coe:main",
+            "yokyo_bin2flash=yokyo_toolchain.bin2flash:main"
         ]
     },
 )

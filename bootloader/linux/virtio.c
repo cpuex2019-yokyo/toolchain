@@ -7,13 +7,12 @@
 #include "virtio.h"
 
 #define R(r) ((volatile uint32 *)(VIRTIO0 + (r)))
-__attribute__ ((aligned (16))) char stack0[4096 * 4];
-static disk_t disk;
+disk_t *disk = (disk_t *) 0x82004000;
 
 int
 virtio_used_updated(void){
-  if ((disk.used_idx % NUM) != (disk.used->id % NUM)){
-    disk.used_idx++;
+  if ((disk->used_idx % NUM) != (disk->used->id % NUM)){
+    disk->used_idx++;
     return 1;
   } else {
     return 0;
@@ -65,20 +64,20 @@ virtio_disk_init(void)
   *R(VIRTIO_MMIO_QUEUE_NUM) = NUM;
 
   // memset
-  uint32 *cdst = (uint32 *) disk.pages;
+  uint32 *cdst = (uint32 *) disk->pages;
   int i;
   for(i = 0; i < (2 * PGSIZE)/sizeof(uint32); i++){
     cdst[i] = 0;
   }
   
-  *R(VIRTIO_MMIO_QUEUE_PFN) = ((uint32)disk.pages) >> PGSHIFT;
+  *R(VIRTIO_MMIO_QUEUE_PFN) = ((uint32)disk->pages) >> PGSHIFT;
 
-  disk.desc = (struct VRingDesc *) disk.pages;
-  disk.avail = (uint16 *)(((char* )disk.desc) + NUM * sizeof(struct VRingDesc));
-  disk.used = (struct UsedArea *) (disk.pages + PGSIZE);
+  disk->desc = (struct VRingDesc *) disk->pages;
+  disk->avail = (uint16 *)(((char* )disk->desc) + NUM * sizeof(struct VRingDesc));
+  disk->used = (struct UsedArea *) (disk->pages + PGSIZE);
 
   for(int i = 0; i < NUM; i++)
-    disk.free[i] = 1;
+    disk->free[i] = 1;
 }
 
 void
@@ -86,7 +85,7 @@ virtio_disk_rw(int sector, int write, char* buffer)
 {
   int idx[3];
   for(int i = 0; i < 3; i++){
-    disk.free[i] = 0;
+    disk->free[i] = 0;
     idx[i] = i;
   }
 
@@ -103,27 +102,27 @@ virtio_disk_rw(int sector, int write, char* buffer)
   buf0.reserved = 0;
   buf0.sector = sector;
 
-  disk.desc[idx[0]].addr = (uint64) (uint32) &buf0;
-  disk.desc[idx[0]].len = sizeof(buf0);
-  disk.desc[idx[0]].flags = VRING_DESC_F_NEXT;
-  disk.desc[idx[0]].next = idx[1];
+  disk->desc[idx[0]].addr = (uint64) (uint32) &buf0;
+  disk->desc[idx[0]].len = sizeof(buf0);
+  disk->desc[idx[0]].flags = VRING_DESC_F_NEXT;
+  disk->desc[idx[0]].next = idx[1];
 
-  disk.desc[idx[1]].addr = (uint64) (uint32) buffer;
-  disk.desc[idx[1]].len = SECTOR_SIZE;
+  disk->desc[idx[1]].addr = (uint64) (uint32) buffer;
+  disk->desc[idx[1]].len = SECTOR_SIZE;
   if(write)
-    disk.desc[idx[1]].flags = 0;
+    disk->desc[idx[1]].flags = 0;
   else
-    disk.desc[idx[1]].flags = VRING_DESC_F_WRITE;
-  disk.desc[idx[1]].flags |= VRING_DESC_F_NEXT;
-  disk.desc[idx[1]].next = idx[2];
+    disk->desc[idx[1]].flags = VRING_DESC_F_WRITE;
+  disk->desc[idx[1]].flags |= VRING_DESC_F_NEXT;
+  disk->desc[idx[1]].next = idx[2];
 
-  disk.info[idx[0]].status = 0;
-  disk.desc[idx[2]].addr = (uint64) (uint32) &disk.info[idx[0]].status;
-  disk.desc[idx[2]].len = 1;
-  disk.desc[idx[2]].flags = VRING_DESC_F_WRITE;
-  disk.desc[idx[2]].next = 0;
+  disk->info[idx[0]].status = 0;
+  disk->desc[idx[2]].addr = (uint64) (uint32) &disk->info[idx[0]].status;
+  disk->desc[idx[2]].len = 1;
+  disk->desc[idx[2]].flags = VRING_DESC_F_WRITE;
+  disk->desc[idx[2]].next = 0;
   
-  disk.avail[2 + (disk.avail[1] % NUM)] = idx[0];
-  disk.avail[1] = disk.avail[1] + 1;
+  disk->avail[2 + (disk->avail[1] % NUM)] = idx[0];
+  disk->avail[1] = disk->avail[1] + 1;
   *R(VIRTIO_MMIO_QUEUE_NOTIFY) = 0;
 }

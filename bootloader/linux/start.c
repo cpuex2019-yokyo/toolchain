@@ -11,8 +11,8 @@
 #define MAX_SECTOR_NUM 37208
 #define KERNBASE 0x80000000
 
-static int sector = 0;
-static char buffer[SECTOR_SIZE];
+int *sector = (int *) 0x8200b000;
+char *buffer = (char *) 0x82003000;
 
 void _finalize();
 void _trapvec();
@@ -41,16 +41,16 @@ void handle(){
      && irq == VIRTIO0_IRQ){
     while(virtio_used_updated()){
       // copy to mem
-      char *mem = (char*) (uint32) (uint64) (KERNBASE + sector * SECTOR_SIZE);      
+      char *mem = (char*) (uint32) (uint64) (KERNBASE + (*sector) * SECTOR_SIZE);      
       for (int i=0; i < SECTOR_SIZE; i++){
         mem[i] = buffer[i];
       }
-      if ((sector+1) % (MAX_SECTOR_NUM/100) == 0)
+      if (((*sector)+1) % (MAX_SECTOR_NUM/100) == 0)
         printf(".");
       
       // request next
-        if (sector + 1 >= MAX_SECTOR_NUM) {
-          if (sector + 1 == MAX_SECTOR_NUM){
+      if ((*sector) + 1 >= MAX_SECTOR_NUM) {
+        if ((*sector) + 1 == MAX_SECTOR_NUM){
             printf("\nBootloader: Running Kernel ...\n");
             asm volatile("ecall");
           } else {
@@ -60,7 +60,7 @@ void handle(){
         }
     }
     *(uint32*)PLIC_SCLAIM(0) = irq;
-    virtio_disk_rw(++sector, READ, buffer);
+    virtio_disk_rw(++(*sector), READ, buffer);
   }  
 }
 
@@ -76,10 +76,10 @@ void smain(){
   *(uint32*)PLIC_SPRIORITY(0) = 0;
   
   uartinit();
-  printf("Bootloader: Loading Kernel Image ...\n");
+  printf("Bootloader: Loading Kernel Image (Linux) ...\n");
   
   virtio_disk_init();  
-  virtio_disk_rw(sector, READ, buffer);  
+  virtio_disk_rw(*sector, READ, buffer);  
   jump_to_user((uint32) wait_for_interrupt);
 }
 
@@ -91,6 +91,8 @@ void start(){
 
   // disable paging
   w_satp(0);
+
+  *sector = 0;
 
   // jump to write_test and go to S-mode
   uint32 x = r_mstatus();
