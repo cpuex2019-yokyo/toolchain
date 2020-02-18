@@ -7,8 +7,7 @@
 #include "virtio.h"
 
 #define R(r) ((volatile uint32 *)(VIRTIO0 + (r)))
-
-__attribute__ ((aligned (16))) char stack0[4096];
+__attribute__ ((aligned (16))) char stack0[4096 * 4];
 static disk_t disk;
 
 int
@@ -83,14 +82,12 @@ virtio_disk_init(void)
 }
 
 void
-virtio_disk_rw(int blockno, int write, char* buffer)
+virtio_disk_rw(int sector, int write, char* buffer)
 {
-  uint64 sector = blockno * 2;
-
   int idx[3];
   for(int i = 0; i < 3; i++){
     disk.free[i] = 0;
-    idx[i] = i+1;
+    idx[i] = i;
   }
 
   struct virtio_blk_outhdr {
@@ -112,7 +109,7 @@ virtio_disk_rw(int blockno, int write, char* buffer)
   disk.desc[idx[0]].next = idx[1];
 
   disk.desc[idx[1]].addr = (uint64) (uint32) buffer;
-  disk.desc[idx[1]].len = BSIZE;
+  disk.desc[idx[1]].len = SECTOR_SIZE;
   if(write)
     disk.desc[idx[1]].flags = 0;
   else
@@ -128,6 +125,5 @@ virtio_disk_rw(int blockno, int write, char* buffer)
   
   disk.avail[2 + (disk.avail[1] % NUM)] = idx[0];
   disk.avail[1] = disk.avail[1] + 1;
-
   *R(VIRTIO_MMIO_QUEUE_NOTIFY) = 0;
 }

@@ -1,5 +1,7 @@
 #pragma once
 
+#define SECTOR_SIZE 512
+
 #define UART0 0x10000000
 #define UART0_IRQ 10
 

@@ -1,5 +1,3 @@
-#pragma once
-#include "types.h"
 
 static inline void 
 w_mepc(uint32 x)
@@ -29,6 +27,12 @@ static inline void
 w_stvec(uint32 x)
 {
   asm volatile("csrw stvec, %0" : : "r" (x));
+}
+
+static inline void 
+w_mtvec(uint32 x)
+{
+  asm volatile("csrw mtvec, %0" : : "r" (x));
 }
 
 #define MSTATUS_MPP_MASK (3 << 11) // previous mode.

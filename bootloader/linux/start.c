@@ -8,13 +8,17 @@
 #define READ 0
 #define WRITE 1
 
-static char buffer[BSIZE];
-static char buffer2[BSIZE];
-static int phase = 0;
+#define MAX_SECTOR_NUM 37208
+#define KERNBASE 0x80000000
+
+static int sector = 0;
+static char buffer[SECTOR_SIZE];
+
+void _finalize();
+void _trapvec();
 
 // in U mode ...
-int wait_for_interrupt(){
-  printf("U\n");  
+int wait_for_interrupt(){  
   while(1);
 }
 
@@ -28,94 +32,62 @@ void jump_to_user(uint32 dest){
   asm volatile("sret");    
 }
 
-void pass(){
-  printf("P\n");
-  while (1);
-}
-
-void fail(){
-  printf("F\n");
-  while (1);
-}
-
-void init_buffer(){
-  for (int i = 0; i < BSIZE; i++){
-    buffer[i] = (char) (i % 0xFF);
-  }                     
-}
-
-void write_test(){
-  // write to sector 1 from buffer
-  virtio_disk_rw(1, WRITE, buffer);  
-}
-
-void read_test(){
-  // read from sector 0 to buffer2
-  virtio_disk_rw(1, READ, buffer2);
-}
-
-int verify_result(){
-  for (int i=0; i < BSIZE; i++)
-    if(buffer[i] != buffer2[i])
-      return 0;
-  return 1;
-}
-
-void interrupt(){
+void handle(){
   uint32 scause = r_scause();
   uint32 irq = *(uint32*)PLIC_SCLAIM(0);
+  
   if((scause & 0x80000000)
      && (scause & 0xff) == 9
      && irq == VIRTIO0_IRQ){
     while(virtio_used_updated()){
-      if (phase == 0){
-        read_test();
-        printf("5\n");
-        phase++;
-      } else {
-        printf("7\n");
-        if(verify_result())
-          pass();
-        else
-          fail();
+      // copy to mem
+      char *mem = (char*) (uint32) (uint64) (KERNBASE + sector * SECTOR_SIZE);      
+      for (int i=0; i < SECTOR_SIZE; i++){
+        mem[i] = buffer[i];
       }
+      if ((sector+1) % (MAX_SECTOR_NUM/100) == 0)
+        printf(".");
+      
+      // request next
+        if (sector + 1 >= MAX_SECTOR_NUM) {
+          if (sector + 1 == MAX_SECTOR_NUM){
+            printf("\nBootloader: Running Kernel ...\n");
+            asm volatile("ecall");
+          } else {
+            printf("Ha?\n");
+            while(1);
+          }
+        }
     }
     *(uint32*)PLIC_SCLAIM(0) = irq;
-  }
-  jump_to_user((uint32) wait_for_interrupt);
+    virtio_disk_rw(++sector, READ, buffer);
+  }  
 }
 
 // in supervisor mode...  
 void smain(){
-  // enable S-mode interrupt
+  // enazoble S-mode interrupt
   w_sie(r_sie() | SIE_SEIE);
   w_sstatus(r_sstatus() | SSTATUS_SIE);
-  w_stvec((uint32)interrupt);
+  w_stvec((uint32)_trapvec);
   
   *(uint32*)(PLIC + VIRTIO0_IRQ*4) = 1;
   *(uint32*)PLIC_SENABLE(0) = (1 << VIRTIO0_IRQ);
   *(uint32*)PLIC_SPRIORITY(0) = 0;
-
-  printf("0\n");
+  
   uartinit();
-
-  printf("1\n");
-  init_buffer();
+  printf("Bootloader: Loading Kernel Image ...\n");
   
-  printf("2\n");
-  virtio_disk_init();
-  
-  printf("3\n");
-  write_test();
-  
-  printf("4\n");
+  virtio_disk_init();  
+  virtio_disk_rw(sector, READ, buffer);  
   jump_to_user((uint32) wait_for_interrupt);
 }
 
 void start(){  
   // delegate all interrupts to S-mode
-  w_medeleg(0xffff);
-  w_mideleg(0xffff);
+  w_medeleg(0x0000);
+  w_mideleg(0xffff);  
+  w_mtvec((uint32) _finalize);
 
   // disable paging
   w_satp(0);
