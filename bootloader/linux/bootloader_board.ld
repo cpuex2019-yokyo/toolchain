@@ -3,7 +3,7 @@ ENTRY( _entry )
 
 SECTIONS
 {
-  . = 0x00001000;
+  . = 0x00000000;
   .text : {
     *(.text)
   }
@@ -11,9 +11,6 @@ SECTIONS
   . = ALIGN(0x1000);
   PROVIDE(etext = .);
 
-  /*
-   * make sure end is after data and bss.
-   */
   .data : {
     *(.data)
   }
