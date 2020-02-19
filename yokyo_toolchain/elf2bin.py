@@ -10,7 +10,7 @@ def process_file(input_filename, output_filename):
    with open(input_filename, 'rb') as f:
       elffile = ELFFile(f)
       sections_unsorted = []       
-      for sec in filter(lambda x: x['sh_addr'] != 0, elffile.iter_sections()):
+      for sec in filter(lambda x: 'text' in x.name or x['sh_addr'] != 0, elffile.iter_sections()):
          sections_unsorted.append((sec['sh_addr'], sec.data(), sec.data_size))
          
    with open(output_filename, 'wb') as f:
