@@ -35,15 +35,16 @@ void jump_to_user(uint32 dest){
 void handle(){
   uint32 scause = r_scause();
   uint32 irq = *(uint32*)PLIC_SCLAIM(0);
-  
+
   if((scause & 0x80000000)
      && (scause & 0xff) == 9
      && irq == VIRTIO0_IRQ){
     while(virtio_used_updated()){
       // copy to mem
+      printf("sector: %d\n", *sector);
       for (int i=0; i < SECTOR_SIZE; i++){
         uartputc(buffer[i]);
-        buffer[i] = '\0';
+        //buffer[i] = '\0';
       }
       
       // request next
@@ -73,6 +74,8 @@ void smain(){
   *(uint32*)PLIC_SPRIORITY(0) = 0;
   
   uartinit();
+
+  printf("KASU\n");
                             
   virtio_disk_init();  
   virtio_disk_rw(*sector, READ, buffer);  
@@ -90,7 +93,7 @@ void start(){
   w_satp(0);
 
   *sector = 0;
-
+    
   // jump to write_test and go to S-mode
   uint32 x = r_mstatus();
   x &= ~MSTATUS_MPP_MASK;

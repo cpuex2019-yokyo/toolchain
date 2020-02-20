@@ -72,6 +72,8 @@ virtio_disk_init(void)
   
   *R(VIRTIO_MMIO_QUEUE_PFN) = ((uint32)disk->pages) >> PGSHIFT;
 
+  disk->used_idx = 0;
+
   disk->desc = (struct VRingDesc *) disk->pages;
   disk->avail = (uint16 *)(((char* )disk->desc) + NUM * sizeof(struct VRingDesc));
   disk->used = (struct UsedArea *) (disk->pages + PGSIZE);
