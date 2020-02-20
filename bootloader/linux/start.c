@@ -45,12 +45,13 @@ void handle(){
       for (int i=0; i < SECTOR_SIZE; i++){
         mem[i] = buffer[i];
       }
-      if (((*sector)+1) % (MAX_SECTOR_NUM/100) == 0)
-        printf(".");
+      if (((*sector)+1) % (MAX_SECTOR_NUM/10) == 0)
+        printf("%d\n", ((*sector)+1) / (MAX_SECTOR_NUM/10));
       
       // request next
       if ((*sector) + 1 >= MAX_SECTOR_NUM) {
         if ((*sector) + 1 == MAX_SECTOR_NUM){
+            *(uint32*)PLIC_SCLAIM(0) = irq;
             printf("\nBootloader: Running Kernel ...\n");
             asm volatile("ecall");
           } else {
