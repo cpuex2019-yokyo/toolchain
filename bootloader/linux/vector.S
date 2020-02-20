@@ -7,6 +7,25 @@ _trapvec:
 	.globl _finalize
 _finalize:    
     // clear all and jump to kernel
+    csrw medeleg, zero
+    csrw mideleg, zero
+    csrw mtvec, zero
+    csrw mstatus, zero
+    csrw mepc, zero
+    
+    csrw sie, zero
+    csrw sstatus, zero
+    csrw stvec, zero
+    csrw scause, zero
+    csrw stval, zero
+    csrw sepc, zero
+    
+    li x1, 0x0c000000
+    sw zero, 4(x1)
+    li x2, 0x2080
+    add x1, x1, x2
+    sw zero, 0(x1)
+    
     li x1, 0x00000000
     li x2, 0x00000000
     li x3, 0x00000000
@@ -38,8 +57,9 @@ _finalize:
     li x29, 0x00000000
     li x30, 0x00000000
     li x31, 0x00000000
+        
     la a1, dtb
-    li t0, 0x80000000    
+    li t0, 0x80000000
     jr t0    
 dtb:    
     .incbin "board.dtb"
