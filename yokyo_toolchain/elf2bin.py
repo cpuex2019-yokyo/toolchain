@@ -11,12 +11,16 @@ def process_file(input_filename, output_filename):
       elffile = ELFFile(f)
       sections_unsorted = []       
       for sec in filter(lambda x: 'text' in x.name or x['sh_addr'] != 0, elffile.iter_sections()):
-         sections_unsorted.append((sec['sh_addr'], sec.data(), sec.data_size))
+         if 'bss' in sec.name:
+            print("found .bss section. filling null ...")
+            sections_unsorted.append((sec['sh_addr'], b'\x00' * sec.data_size, sec.data_size))
+         else:
+            sections_unsorted.append((sec['sh_addr'], sec.data(), sec.data_size))
          
    with open(output_filename, 'wb') as f:
       sections = sorted(sections_unsorted, key=lambda x: x[0])      
       for i in range(0, len(sections)):
-         current_sec_head, data, size = sections[i]
+         current_sec_head, data, size = sections[i]  
          if i < len(sections) - 1:
             next_sec_head = sections[i+1][0]
             f.write(data)
