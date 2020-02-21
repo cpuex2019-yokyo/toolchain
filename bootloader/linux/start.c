@@ -8,7 +8,7 @@
 #define READ 0
 #define WRITE 1
 
-#define MAX_SECTOR_NUM 37208
+#define MAX_SECTOR_NUM 0xFFFFFF/512
 #define KERNBASE 0x80000000
 
 int *sector = (int *) 0x8200b000;
